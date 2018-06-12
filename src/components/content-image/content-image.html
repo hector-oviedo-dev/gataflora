@@ -1,0 +1,40 @@
+<div [ngSwitch]="_orientation">
+  <!--Image on LEFT, title, and description on right-->
+  <ion-row *ngSwitchDefault justify-content-center>
+    <!--Image-->
+    <ion-col col-auto>
+      <ion-img [width]="_width" [height]="_height" [src]="_source"></ion-img>
+    </ion-col>
+  </ion-row>
+
+  <!--Image on LEFT, title, and description on right-->
+  <ion-row *ngSwitchCase="'left'" justify-content-start>
+    <!--Image-->
+    <ion-col col-auto>
+      <ion-img [width]="_width" [height]="_height" [src]="_source"></ion-img>
+    </ion-col>
+    <!--Content-->
+    <ion-col col-auto>
+      <h4 [style.text-align]="_text_align">{{_label}}</h4>
+      <ion-label [style.text-align]="_text_align">{{_description}}</ion-label>
+    </ion-col>
+  </ion-row>
+
+  <!--Image on LEFT, title, and description on right-->
+  <ion-row *ngSwitchCase="'right'" justify-content-end>
+    <!--Content-->
+    <ion-col col-auto>
+      <h4 [style.text-align]="_text_align">{{_label}}</h4>
+      <ion-label [style.text-align]="_text_align">{{_description}}</ion-label>
+    </ion-col>
+    <!--Image-->
+    <ion-col col-auto align-self-end>
+      <ion-img [width]="_width" [height]="_height" [src]="_source"></ion-img>
+    </ion-col>
+  </ion-row>
+</div>
+
+<!--Separator-->
+<!--<br>
+<ion-item-divider></ion-item-divider>-->
+<br>

@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "666539925388",
+    "firebase_url": "https://flora-fe583.firebaseio.com",
+    "project_id": "flora-fe583",
+    "storage_bucket": "flora-fe583.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:666539925388:android:f23e485ad29859ff",
+        "android_client_info": {
+          "package_name": "com.flora"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "666539925388-6ccfdkevpvrr8thbjdbnit8mre2u5he2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBuGZfM1KjsEeFwsLPVygmQjz9ZBmvBwjI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

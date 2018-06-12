@@ -1,0 +1,40 @@
+<form [formGroup]="_form" [hidden]="_hidden">
+  <ion-grid [hidden]="_hidden" [ngClass]="(_enabled)?((_form.controls['data'].valid)?'formBoxValid':'formBoxInalid'):'formBoxDisabled'">
+
+    <!--Label-->
+    <ion-row *ngIf="_label">
+      <ion-col>
+        <ion-label>
+        {{_label}}
+        </ion-label>
+      </ion-col>
+    </ion-row>
+    <!--Input Control-->
+    <ion-row>
+      <ion-col>
+
+        <ion-input placeholder="{{_placeholder}}" min="{{_min}}" maxlength="{{_max}}" [type]="_input_type"
+          formControlName="data"
+          [ngClass]="(_enabled)?((_form.controls['data'].valid)?'formTextValid':'formTextInalid'):'formTextDisabled'"
+          [(ngModel)]="_value"
+          (keyup)="onChange($event)">
+        </ion-input>
+
+      </ion-col>
+    </ion-row>
+    <!--Required Message-->
+    <ion-row *ngIf="(!_form.controls['data'].valid && _txt_required != undefined)">
+      <ion-col>
+        <ion-label color="danger" stacked>
+        * {{_txt_required}}
+        </ion-label>
+      </ion-col>
+    </ion-row>
+
+  </ion-grid>
+</form>
+
+<!--Separator-->
+<!--<br>
+<ion-item-divider></ion-item-divider>-->
+<br>

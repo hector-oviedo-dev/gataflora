@@ -1,0 +1,37 @@
+
+  <ion-grid [ngClass]="[(_valid)?'formBoxValid':'formBoxInalid']">
+
+    <!--Label-->
+    <ion-row *ngIf="_label">
+      <ion-col>
+        <ion-label>
+        {{_label}}
+        </ion-label>
+      </ion-col>
+    </ion-row>
+    <!--Radio Control-->
+    <ion-row>
+      <ion-col>
+
+        <ion-item *ngFor="let option of _options;let i = index;">
+          <ion-label>{{option.label}}</ion-label>
+          <ion-radio [(value)]="option.value" [(checked)]="option.check" [disabled]="!_enabled" (click)="onChange(i)"></ion-radio>
+        </ion-item>
+
+      </ion-col>
+    </ion-row>
+    <!--Required Message-->
+    <ion-row *ngIf="(!_valid && _txt_required != undefined)">
+      <ion-col>
+        <ion-label color="danger" stacked>
+        * {{_txt_required}}
+        </ion-label>
+      </ion-col>
+    </ion-row>
+
+  </ion-grid>
+
+<!--Separator-->
+<!--<br>
+<ion-item-divider></ion-item-divider>-->
+<br>

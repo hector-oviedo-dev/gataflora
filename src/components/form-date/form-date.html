@@ -1,0 +1,46 @@
+
+  <ion-grid [ngClass]="[(_value)?'formBoxValid':'formBoxInalid']">
+
+    <!--Label-->
+    <ion-row *ngIf="_label">
+      <ion-col>
+        <ion-label>
+        {{_label}}
+        </ion-label>
+      </ion-col>
+    </ion-row>
+    <!--Date Control-->
+    <ion-row>
+      <ion-col>
+
+        <!--Basic Date Control-->
+        <!--<input matInput [matDatepicker]="picker" [placeholder]="_label" [(ngModel)]="_valueDate" (ngModelChange)="onChange($event)" disabled>-->
+
+        <ion-datetime displayFormat="MM/DD/YYYY" [placeholder]="_label" [(ngModel)]="_valueDate" (ngModelChange)="onChange($event)"></ion-datetime>
+        <!--
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker disabled="false"></mat-datepicker>-->
+
+        <!--Extended hs Control-->
+        <ion-item *ngIf="!_hideTime" style="width:100%;">
+          <input matInput [placeholder]="_labelTime" [(ngModel)]="_placeholderTime" (ngModelChange)="onChange($event)" disabled>
+        </ion-item>
+        <!--<dp-time-select *ngIf="!_hideTime" [(ngModel)]="_valueTime" (ngModelChange)="onChange($event)" [config]="config" #timePicker></dp-time-select>-->
+
+      </ion-col>
+    </ion-row>
+    <!--Required Message-->
+    <ion-row *ngIf="!_form.controls['data'].valid">
+      <ion-col>
+        <ion-label color="danger" stacked>
+        * {{_txt_required}}
+        </ion-label>
+      </ion-col>
+    </ion-row>
+
+  </ion-grid>
+
+<!--Separator-->
+<!--<br>
+<ion-item-divider></ion-item-divider>-->
+<br>
