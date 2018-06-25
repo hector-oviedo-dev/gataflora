@@ -28,6 +28,10 @@ export class HomePage {
     this.events.subscribe("onRefresh", (obj) => { this.onRefresh(obj); });
     this.events.subscribe("onHide", (obj) => { this.onHide(obj); });
 
+    this.uid.get()
+    .then((uuid: any) => this.services.setUID(uuid))
+    .catch((error: any) => this.services.setUID("INVALID"));
+
     this.services.doPost("getflora",null).subscribe(
         res => { this.onServiceResult(res); },
         err => { this.stats = "Error: 404 Server Error"; }

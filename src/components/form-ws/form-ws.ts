@@ -5,29 +5,31 @@ import { ContentTitleComponent } from '../content-title/content-title';
 import { FormButtonComponent } from '../form-button/form-button';
 import { FormCheckComponent } from '../form-check/form-check';
 import { FormCheckListComponent } from '../form-check-list/form-check-list';
-import { FormCompoundComponent } from '../form-compound/form-compound';
 import { FormDateComponent } from '../form-date/form-date';
 import { FormInputComponent } from '../form-input/form-input';
 import { FormQrComponent } from '../form-qr/form-qr';
 import { FormRadioComponent } from '../form-radio/form-radio';
 import { FormSelectComponent } from '../form-select/form-select';
 import { FormTextareaComponent } from '../form-textarea/form-textarea';
-import { FormWsComponent } from '../form-ws/form-ws';
 
 import { ServicesProvider } from '../../providers/services/services';
 import { Events } from 'ionic-angular';
+
 /**
- * Generated class for the FormComponent component.
+ * Generated class for the FormWsComponent component.
  *
  * See https://angular.io/api/core/Component for more info on Angular
  * Components.
  */
 @Component({
-  selector: 'form-app',
-  templateUrl: 'form-app.html'
+  selector: 'form-ws',
+  templateUrl: 'form-ws.html'
 })
-export class FormAppComponent {
+export class FormWsComponent {
+
   @ViewChild('container', {read: ViewContainerRef}) container: ViewContainerRef;
+
+  public _ID:string;
 
   public components = [];
 
@@ -42,31 +44,17 @@ export class FormAppComponent {
 
   private events:Events;
 
-  private onFormEvt;
+  private onCompoundEvt;
   constructor(private componentFactoryResolver: ComponentFactoryResolver, private services:ServicesProvider) {
     this.events = this.services.events;
 
-    this.onFormEvt = this.events.subscribe('onForm', (obj) => { this.onForm(obj); });
+    this.onCompoundEvt = this.events.subscribe('onWSForm', (obj) => { this.onWSForm(obj); });
   }
   public ngOnDestroy() {
-    try { this.onFormEvt.unsubscribe(); } catch (e) { console.log("event already destroyed") };
+    try { this.onCompoundEvt.unsubscribe(); } catch (e) { console.log("event already destroyed") };
   }
-  public onForm(objSTR) {
-    let obj = JSON.parse(objSTR);
-    this._valid = true;
-    for (let i = 0; i < this._controls.length;i++) {
-      if (this._controls[i].id == obj.id) this._controls[i].valid = obj.valid;
-      if (!this._controls[i].valid) this._valid = false;
+  public getValue() {
 
-      console.log(i,this._controls[i].valid)
-    }
-  }
-  public submitClick() {
-    if (this._action == "") {
-      this.events.publish("onPopupClose", "");
-      this.events.publish("onSpinner", true);
-      return;
-    }
     let data = [];
     for (var i = 0; i < this.components.length; i++) {
       var value;
@@ -74,16 +62,55 @@ export class FormAppComponent {
       if (value) data.push(value);
     }
 
-    this.services.doPost(this._action,data).subscribe(
+    return {
+      id:this._ID,
+      value:data
+    }
+  }
+  public onWSForm(objSTR) {
+    let obj = JSON.parse(objSTR);
+    if (obj.id_compound != this._ID) return;
+
+    this._valid = true;
+    for (let i = 0; i < this._controls.length;i++) {
+      if (this._controls[i].id == obj.id) this._controls[i].valid = obj.valid;
+      if (!this._controls[i].valid) this._valid = false;
+    }
+
+    if (obj.update) this.doUpdate();
+    else {
+      let data = { id:this._ID, valid:this._valid };
+      this.events.publish("onForm", JSON.stringify(data));
+    }
+  }
+  public doUpdate() {
+    let data = [];
+    for (var i = 0; i < this.components.length; i++) {
+      var value;
+      try { value = this.components[i].instance.getValue(); } catch (e) { console.log(e); }
+      if (value) data.push(value);
+    }
+
+    let compoundData = {id:this._ID, data:data };
+    this.services.doPost(this._action,compoundData).subscribe(
       resp => { this.onServiceResult(resp); },
       err => { this.events.publish("onError", "404 Server Error"); }
     );
   }
-  public onServiceResult(data) {
-    if (data.success) {
-      this.events.publish("onSpinner", false);
-      this.events.publish("onContent", data);
-    } else console.log("error!!!!!!: ",JSON.stringify(data));
+  public onServiceResult(resp) {
+    if (resp.success) {
+
+      this._ID = resp.json.id;
+      this._action = resp.json.action;
+
+      this.values = resp.json.controls;
+
+      this.container.clear();
+      this.startProcess();
+
+      let data = { id:this._ID, valid:this._valid };
+      this.events.publish("onForm", JSON.stringify(data));
+    } else console.log("error!!!!!!: ",JSON.stringify(resp));
   }
   public startProcess() {
     for (var i = 0; i < this.values.length; i++) {
@@ -93,26 +120,8 @@ export class FormAppComponent {
       let result;
 
       switch (this.values[i].type) {
-        case "WIDGET":
-          arr = ["id","action","controls"];
-          result = (this.validateComponent(this.values[i],arr));
-          if (!result.valid) {
-            let msg = "MalFormed: Missing at object of type: " + this.values[i].type + " objects: " + result.missing;
-            this.events.publish("onError", msg);
-            return;
-          } else this.addCompoundFormComponent(this.values[i]);
-          break;
-          case "WSWIDGET":
-          arr = ["id","action","controls"];
-          result = (this.validateComponent(this.values[i],arr));
-          if (!result.valid) {
-            let msg = "MalFormed: Missing at object of type: " + this.values[i].type + " objects: " + result.missing;
-            this.events.publish("onError", msg);
-            return;
-          } else this.addWsFormComponent(this.values[i]);
-          break;
         case "QR":
-          arr = ["id","value","required","txt_required","btn_label","label","placeholder"];
+          arr = ["id","value","required","txt_required","btn_label","label","placeholder","update"];
           result = (this.validateComponent(this.values[i],arr));
           if (!result.valid) {
             let msg = "MalFormed: Missing at object of type: " + this.values[i].type + " objects: " + result.missing;
@@ -157,7 +166,7 @@ export class FormAppComponent {
           } else this.addButton(this.values[i]);
           break;
         case "INPUT":
-          arr = ["id","value","input_type","hidden","enabled","required","txt_required","min","max","label","placeholder"];
+          arr = ["id","value","input_type","hidden","enabled","required","txt_required","min","max","label","placeholder","update"];
           result = (this.validateComponent(this.values[i],arr));
           if (!result.valid) {
             let msg = "MalFormed: Missing at object of type: " + this.values[i].type + " objects: " + result.missing;
@@ -167,7 +176,7 @@ export class FormAppComponent {
 
           break;
         case "TEXTAREA":
-          arr = ["id","value","enabled","required","txt_required","min","max","label","placeholder"];
+          arr = ["id","value","enabled","required","txt_required","min","max","label","placeholder","update"];
           result = (this.validateComponent(this.values[i],arr));
           if (!result.valid) {
             let msg = "MalFormed: Missing at object of type: " + this.values[i].type + " objects: " + result.missing;
@@ -179,7 +188,7 @@ export class FormAppComponent {
         case "CHECKBOX":
           control.valid = true;
 
-          arr = ["id","value","enabled","required","label"];
+          arr = ["id","value","enabled","required","label","update"];
           result = (this.validateComponent(this.values[i],arr));
           if (!result.valid) {
             let msg = "MalFormed: Missing at object of type: " + this.values[i].type + " objects: " + result.missing;
@@ -189,7 +198,7 @@ export class FormAppComponent {
 
           break;
         case "CHECKBOXLIST":
-          arr = ["id","enabled","required","txt_required","min","max","label"];
+          arr = ["id","enabled","required","txt_required","min","max","label","update"];
           result = (this.validateComponent(this.values[i],arr));
 
           if (!result.valid) {
@@ -201,7 +210,7 @@ export class FormAppComponent {
 
           break;
         case "RADIO":
-          arr = ["id","enabled","required","txt_required","label","values"];
+          arr = ["id","enabled","required","txt_required","label","values","update"];
           result = (this.validateComponent(this.values[i],arr));
 
           if (!result.valid) {
@@ -212,7 +221,7 @@ export class FormAppComponent {
 
           break;
         case "SELECT":
-          arr = ["id","enabled","required","txt_required","label","placeholder","values"];
+          arr = ["id","enabled","required","txt_required","label","placeholder","values","update"];
           result = (this.validateComponent(this.values[i],arr));
 
           if (!result.valid) {
@@ -223,7 +232,7 @@ export class FormAppComponent {
 
           break;
           case "DATE":
-            arr = ["id","hidden","enabled","required","txt_required","label"];
+            arr = ["id","hidden","enabled","required","txt_required","label","update"];
             result = (this.validateComponent(this.values[i],arr));
 
             if (!result.valid) {
@@ -253,6 +262,9 @@ export class FormAppComponent {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormQrComponent);
     const component = this.container.createComponent(componentFactory);
 
+    (<FormQrComponent>component.instance)._compound_ID = this._ID;
+    (<FormQrComponent>component.instance)._event_type  = "onCompoundForm";
+
     (<FormQrComponent>component.instance)._ID          = value.id;
     (<FormQrComponent>component.instance)._value       = value.value;
 
@@ -263,6 +275,8 @@ export class FormAppComponent {
     (<FormQrComponent>component.instance)._label       = value.label;
     (<FormQrComponent>component.instance)._btn_label   = value.btn_label;
     (<FormQrComponent>component.instance)._placeholder = value.placeholder;
+
+    (<FormQrComponent>component.instance)._update      = value.update;
 
     (<FormQrComponent>component.instance).createForm();
 
@@ -325,6 +339,9 @@ export class FormAppComponent {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormInputComponent);
     const component = this.container.createComponent(componentFactory);
 
+    (<FormInputComponent>component.instance)._compound_ID = this._ID;
+    (<FormInputComponent>component.instance)._event_type  = "onCompoundForm";
+
     (<FormInputComponent>component.instance)._ID          = value.id;
     (<FormInputComponent>component.instance)._value       = value.value;
 
@@ -341,6 +358,8 @@ export class FormAppComponent {
     (<FormInputComponent>component.instance)._label       = value.label;
     (<FormInputComponent>component.instance)._placeholder = value.placeholder;
 
+    (<FormInputComponent>component.instance)._update      = value.update;
+
     (<FormInputComponent>component.instance).createForm();
 
     this.components.push(component);
@@ -349,6 +368,9 @@ export class FormAppComponent {
   public addTextarea(value:any) {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormTextareaComponent);
     const component = this.container.createComponent(componentFactory);
+
+    (<FormTextareaComponent>component.instance)._compound_ID = this._ID;
+    (<FormTextareaComponent>component.instance)._event_type  = "onCompoundForm";
 
     (<FormTextareaComponent>component.instance)._ID          = value.id;
     (<FormTextareaComponent>component.instance)._value       = value.value;
@@ -364,6 +386,8 @@ export class FormAppComponent {
     (<FormTextareaComponent>component.instance)._label       = value.label;
     (<FormTextareaComponent>component.instance)._placeholder = value.placeholder;
 
+    (<FormTextareaComponent>component.instance)._update      = value.update;
+
     (<FormTextareaComponent>component.instance).createForm();
 
     this.components.push(component);
@@ -372,6 +396,9 @@ export class FormAppComponent {
   public addDate(value:any) {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormDateComponent);
     const component = this.container.createComponent(componentFactory);
+
+    (<FormDateComponent>component.instance)._compound_ID = this._ID;
+    (<FormDateComponent>component.instance)._event_type  = "onCompoundForm";
 
     (<FormDateComponent>component.instance)._ID          = value.id;
     (<FormDateComponent>component.instance)._value       = value.value;
@@ -390,12 +417,17 @@ export class FormAppComponent {
     (<FormDateComponent>component.instance)._placeholder = value.placeholder;
     (<FormDateComponent>component.instance)._placeholderTime = value.placeholderTime;
 
+    (<FormDateComponent>component.instance)._update      = value.update;
+
     this.components.push(component);
     return true;
   }
   public addCheckbox(value:any) {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormCheckComponent);
     const component = this.container.createComponent(componentFactory);
+
+    (<FormCheckComponent>component.instance)._compound_ID = this._ID;
+    (<FormCheckComponent>component.instance)._event_type  = "onCompoundForm";
 
     (<FormCheckComponent>component.instance)._ID          = value.id;
     (<FormCheckComponent>component.instance)._value       = value.value;
@@ -405,6 +437,8 @@ export class FormAppComponent {
 
     (<FormCheckComponent>component.instance)._label       = value.label;
 
+    (<FormCheckComponent>component.instance)._update      = value.update;
+
     this.components.push(component);
     return true;
   }
@@ -412,10 +446,13 @@ export class FormAppComponent {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormCheckListComponent);
     const component = this.container.createComponent(componentFactory);
 
+    (<FormCheckListComponent>component.instance)._compound_ID = this._ID;
+    (<FormCheckListComponent>component.instance)._event_type  = "onCompoundForm";
+
     (<FormCheckListComponent>component.instance)._ID          = value.id;
 
     (<FormCheckListComponent>component.instance)._enabled     = value.enabled;
-    (<FormCheckListComponent>component.instance)._required    = false;
+    (<FormCheckListComponent>component.instance)._required    = value.required;
 
     (<FormCheckListComponent>component.instance)._txt_required= value.txt_required;
 
@@ -423,6 +460,8 @@ export class FormAppComponent {
     (<FormCheckListComponent>component.instance)._max         = value.max;
 
     (<FormCheckListComponent>component.instance)._label       = value.label;
+
+    (<FormCheckListComponent>component.instance)._update      = value.update;
 
     for (let i = 0; i < value.values.length; i++) {
       let option = {
@@ -441,6 +480,9 @@ export class FormAppComponent {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormRadioComponent);
     const component = this.container.createComponent(componentFactory);
 
+    (<FormRadioComponent>component.instance)._compound_ID = this._ID;
+    (<FormRadioComponent>component.instance)._event_type  = "onCompoundForm";
+
     (<FormRadioComponent>component.instance)._ID          = value.id;
 
     (<FormRadioComponent>component.instance)._enabled     = value.enabled;
@@ -449,6 +491,8 @@ export class FormAppComponent {
     (<FormRadioComponent>component.instance)._txt_required= value.txt_required;
 
     (<FormRadioComponent>component.instance)._label       = value.label;
+
+    (<FormRadioComponent>component.instance)._update      = value.update;
 
     for (let i = 0; i < value.values.length; i++) {
       let option = {
@@ -469,6 +513,9 @@ export class FormAppComponent {
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormSelectComponent);
     const component = this.container.createComponent(componentFactory);
 
+    (<FormSelectComponent>component.instance)._compound_ID = this._ID;
+    (<FormSelectComponent>component.instance)._event_type  = "onCompoundForm";
+
     (<FormSelectComponent>component.instance)._ID          = value.id;
     (<FormSelectComponent>component.instance)._value       = value.value;
 
@@ -479,6 +526,8 @@ export class FormAppComponent {
 
     (<FormSelectComponent>component.instance)._label       = value.label;
     (<FormSelectComponent>component.instance)._placeholder = value.placeholder;
+
+    (<FormSelectComponent>component.instance)._update      = value.update;
 
     (<FormSelectComponent>component.instance).createForm();
 
@@ -496,36 +545,5 @@ export class FormAppComponent {
     this.components.push(component);
     return true;
   }
-  ///Add Form View
-  public addCompoundFormComponent(data:any) {
-    const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormCompoundComponent);
-    const component = this.container.createComponent(componentFactory);
 
-    (<FormCompoundComponent>component.instance)._ID           = data.id;
-
-    (<FormCompoundComponent>component.instance)._action       = data.action;
-
-    (<FormCompoundComponent>component.instance).values        = data.controls;
-
-    (<FormCompoundComponent>component.instance).startProcess();
-
-    this.components.push(component);
-    return true;
-  }
-    ///Add Form View
-    public addWsFormComponent(data:any) {
-      const componentFactory = this.componentFactoryResolver.resolveComponentFactory(FormWsComponent);
-      const component = this.container.createComponent(componentFactory);
-  
-      (<FormWsComponent>component.instance)._ID           = data.id;
-  
-      (<FormWsComponent>component.instance)._action       = data.action;
-  
-      (<FormWsComponent>component.instance).values        = data.controls;
-  
-      (<FormWsComponent>component.instance).startProcess();
-  
-      this.components.push(component);
-      return true;
-    }
 }
